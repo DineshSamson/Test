@@ -5,9 +5,13 @@ using UnityEngine.UI;
 using TMPro;
 using System.Linq;
 using UnityEditor.SceneTemplate;
+using UnityEngine.SocialPlatforms.Impl;
+using System;
 
 public class GameController : MonoBehaviour
 {
+    public GameObject MainObject;
+
     public int rowCount = 4;
     public int columnCount = 4;
 
@@ -25,10 +29,43 @@ public class GameController : MonoBehaviour
     private bool isCardSelected = false;
     private SampleCard SelectedCard;
 
-    // Start is called before the first frame update
-    void Start()
+    public TMP_Text Turns_Text;
+    private int TurnCounter = 0;
+    public TMP_Text Score_Text;
+    public int Score;
+
+    public static Action CardFlipCallBack;
+
+    public int ComboCounter;
+    public int GameEndCounter;
+
+    public TMP_Text TotalScore;
+
+    public GameObject Endgame;
+
+    private void OnEnable()
     {
+        CardFlipCallBack += StatusAudioPlay;
+    }
+
+    private void OnDisable()
+    {
+        CardFlipCallBack -= StatusAudioPlay;
+    }
+
+    public void Init()
+    {
+        MainObject.SetActive(true);
         SetupCards();
+        AddScore(0);
+        AddTuens();
+
+        ComboCounter = -1;
+        GameEndCounter= 0;
+
+        TotalScore.text = ""+ PlayerPrefs.GetInt("TotalScore");
+        Endgame.SetActive(false);
+
     }
 
 
@@ -45,7 +82,7 @@ public class GameController : MonoBehaviour
         for(int i = 0; i < NumberOfCards/2; i++) 
         {
           
-            int RandomOption = Random.Range(0, tempOptionList.Count);
+            int RandomOption = UnityEngine.Random.Range(0, tempOptionList.Count);
 
             FinalOptionList.Add(tempOptionList[RandomOption]);
             FinalOptionList.Add(tempOptionList[RandomOption]);
@@ -60,8 +97,6 @@ public class GameController : MonoBehaviour
 
         for (int i= 0; i < result.Count; i++)
         {
-            Debug.Log("i  " + i);
-
             SampleCard cardz = Instantiate(sampleCard);
 
             cardz.card_Button.interactable = false;
@@ -82,29 +117,31 @@ public class GameController : MonoBehaviour
         StartCoroutine(InitialFlipWithDelay());
     }
 
-    IEnumerator InitialFlipWithDelay()
-    {
-        yield return new WaitForSeconds(3);
-        for(int i = 0; i < cardsList.Count; i++)
-        {
-            cardsList[i].FlipCardToBack();
-            cardsList[i].card_Button.interactable = true;
-        }
-    }
-
+   
     void SuffleList<T>(List<T> list)
     {
         for(int i = list.Count - 1; i > 0; i--)
         {
-            int j = Random.Range(0 , i + 1);
+            int j = UnityEngine.Random.Range(0 , i + 1);
             T temp = list[i];
             list[i] = list[j];
             list[j] = temp;
         }
     }
 
+    IEnumerator InitialFlipWithDelay()
+    {
+        yield return new WaitForSeconds(1);
+        for (int i = 0; i < cardsList.Count; i++)
+        {
+            cardsList[i].FlipCardToBack();
+            cardsList[i].card_Button.interactable = true;
+        }
+    }
+
     void VerifyCardMatch(SampleCard card)
     {
+        SoundManager.instance.PlayButtonClickSound();
         card.FlipCardToFront();
         if (!isCardSelected)
         {
@@ -115,23 +152,66 @@ public class GameController : MonoBehaviour
         {
             if(SelectedCard.front_Image.sprite == card.front_Image.sprite)
             {
-                SelectedCard.card_Button.interactable = false;
-                card.card_Button.interactable = false;
+              
+                SoundManager.instance.PlayMatchSound();
+                StartCoroutine( SelectedCard.HideCard());
+                StartCoroutine(card.HideCard());            
+                ComboCounter++;
+                AddScore(1);
+                StartCoroutine(CheckGameEnd());
             }
             else
-            {
-                StartCoroutine(FlipBackHandling(card, SelectedCard));
+            { 
+                StartCoroutine(SelectedCard.KeepCard());
+                StartCoroutine(card.KeepCard());
+                SoundManager.instance.PlayMissMatchSound();
+                ComboCounter = -1;
             }
             isCardSelected = false;
             SelectedCard = null;
+            AddTuens();
         }
     }
 
-    IEnumerator FlipBackHandling(SampleCard Card_1, SampleCard Card_2)
-    {
-        yield return new WaitForSeconds(1);
-        Card_1.FlipCardToBack();
-        Card_2.FlipCardToBack();
+  
+
+    void AddTuens()
+    {       
+        Turns_Text.text = ""+TurnCounter++;
     }
 
+    void AddScore(int ScoreToAdd)
+    {
+        if(ComboCounter == 0)
+            Score += ScoreToAdd;
+        else
+            Score += ComboCounter * 5;
+
+        Score_Text.text = ""+ Score;
+    }
+
+    public void StatusAudioPlay()
+    {
+        Debug.Log("Fliped");
+    }
+
+    public void Close()
+    {
+        MainObject.SetActive(false);
+    }
+
+    public IEnumerator CheckGameEnd()
+    {
+        yield return new WaitForSeconds(1);
+        ++GameEndCounter;
+        if(GameEndCounter == ((rowCount * columnCount) / 2))
+        {
+            int TotalScore = PlayerPrefs.GetInt("TotalScore") + Score;
+            PlayerPrefs.SetInt("TotalScore", TotalScore);
+            Endgame.SetActive(true);
+            yield return new WaitForSeconds(0.5f);
+            MainController.Instance.mainMenuController.Init();
+            Close();
+        }
+    }
 }

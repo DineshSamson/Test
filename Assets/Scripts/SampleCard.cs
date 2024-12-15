@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +10,7 @@ public class SampleCard : MonoBehaviour
     public Image front_Image;
     public GameObject back_Image;
     public Animation _animation;
+
    
     //Flips the card to back
     public void FlipCardToBack()
@@ -30,7 +32,8 @@ public class SampleCard : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         front_Image.gameObject.SetActive(false);
         back_Image.SetActive(true);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.7f);
+
         card_Button.transform.localEulerAngles = Vector2.zero;
         card_Button.interactable = true;
     }
@@ -42,5 +45,23 @@ public class SampleCard : MonoBehaviour
         front_Image.gameObject.SetActive(true);
         back_Image.SetActive(false);
         card_Button.interactable = false;
+
+        GameController.CardFlipCallBack?.Invoke();
+    }
+
+    public IEnumerator KeepCard()
+    {
+        yield return new WaitForSeconds(2);
+        FlipCardToBack();
+    }
+
+    public IEnumerator HideCard()
+    {
+        card_Button.GetComponent<Image>().enabled = false;
+        yield return new WaitForSeconds(1.5f);
+        front_Image.gameObject.SetActive(false);
+        back_Image.SetActive(false);      
+        card_Button.interactable = false;
+
     }
 }
