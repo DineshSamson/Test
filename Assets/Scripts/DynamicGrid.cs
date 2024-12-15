@@ -11,7 +11,7 @@ public class DynamicGrid : MonoBehaviour
     public GameObject _cardPrefab;
     public Transform _gridParent;
 
-    public void SetGridPattern(int rows, int columns)
+    public void SetGridPattern(int rows, int columns, List<SampleCard> CardsList)
     {
         _GridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         _GridLayoutGroup.constraintCount = columns;
@@ -36,19 +36,21 @@ public class DynamicGrid : MonoBehaviour
 
         _GridLayoutGroup.cellSize = new Vector2(SquareCellSize, SquareCellSize);
 
-      
+
 
 
         foreach (Transform child in _gridParent)
         {
+            Debug.Log("");
             Destroy(child.gameObject);
         }
 
         int totalCards = rows * columns;
 
-        for(int i = 0; i < totalCards; i++) 
+        for (int i = 0; i < CardsList.Count; i++)
         {
-            Instantiate(_cardPrefab, _gridParent);
+            //Instantiate(_cardPrefab, _gridParent);
+            CardsList[i].transform.SetParent(_gridParent, false);
         }
 
         Vector2 CurrentSize = grideRect.sizeDelta;
@@ -65,11 +67,13 @@ public class DynamicGrid : MonoBehaviour
 
     }
 
+   
+
 
     // Start is called before the first frame update
     void Start()
     {
-        SetGridPattern(2 ,4);
+        //SetGridPattern(4 ,4);
     }
 
     // Update is called once per frame
