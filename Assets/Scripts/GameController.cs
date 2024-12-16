@@ -23,9 +23,9 @@ public class GameController : MonoBehaviour
 
     public DynamicGrid dynamicGrid;
 
-    public List<SampleCard> cardsList = new List<SampleCard>();
+    private List<SampleCard> cardsList = new List<SampleCard>();
 
-    public List<Sprite> result = new List<Sprite>();
+    private List<Sprite> result = new List<Sprite>();
 
     private bool isCardSelected = false;
     private SampleCard SelectedCard;
@@ -250,8 +250,9 @@ public class GameController : MonoBehaviour
     }
 
     void AddTuens()
-    {       
-        Turns_Text.text = ""+(TurnCounter++);
+    {
+        ++TurnCounter;
+        Turns_Text.text = ""+TurnCounter;
     }
 
     void AddScore(int ScoreToAdd)
@@ -289,6 +290,8 @@ public class GameController : MonoBehaviour
             Close();
         }
     }
+
+
 
     void SaveGame()
     {
