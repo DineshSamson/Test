@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class SampleCard : MonoBehaviour
 {
+    public int index;
     public Button card_Button;
     public Image front_Image;
     public GameObject back_Image;
@@ -15,15 +16,21 @@ public class SampleCard : MonoBehaviour
     //Flips the card to back
     public void FlipCardToBack()
     {
+        if (_animation.enabled)
+        { 
         _animation.Play("FlipBack");
-        StartCoroutine(HandleImageOnFlipBack());
+            StartCoroutine(HandleImageOnFlipBack());
+        }
     }
 
     //Flips the card to front
     public void FlipCardToFront()
     {
-        _animation.Play("FlipFront");
-        StartCoroutine(HandleImageOnFlipFront());
+        if (_animation.enabled)
+        {
+            _animation.Play("FlipFront");
+            StartCoroutine(HandleImageOnFlipFront());
+        }
     }
 
     IEnumerator HandleImageOnFlipBack()
@@ -51,17 +58,23 @@ public class SampleCard : MonoBehaviour
 
     public IEnumerator KeepCard()
     {
-        yield return new WaitForSeconds(2);
-        FlipCardToBack();
+        if (_animation.enabled)
+        {
+            yield return new WaitForSeconds(2);
+            FlipCardToBack();
+        }
     }
 
     public IEnumerator HideCard()
     {
-        card_Button.GetComponent<Image>().enabled = false;
-        yield return new WaitForSeconds(1.5f);
-        front_Image.gameObject.SetActive(false);
-        back_Image.SetActive(false);      
-        card_Button.interactable = false;
+        if (_animation.enabled)
+        {
+            card_Button.GetComponent<Image>().enabled = false;
+            yield return new WaitForSeconds(1.5f);
+            front_Image.gameObject.SetActive(false);
+            back_Image.SetActive(false);
+            card_Button.interactable = false;
+        }
 
     }
 }

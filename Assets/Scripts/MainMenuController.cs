@@ -20,17 +20,22 @@ public class MainMenuController : MonoBehaviour
     public Animation playAnimation;
 
     public TMP_Text TotalScore;
+
+    public GameObject ResumeMenu;
     private void Start()
     {
         VolumeSlider.value = 1;
         VolumeSlider.onValueChanged.AddListener(delegate { SoundManager.instance.AdjustVolume(VolumeSlider.value); });
     }
 
+
+    //Initializing the first menu 
     public void Init()
     {
         MainObject.SetActive(true);
 
         playAnimation.Play();
+
 
         if (!PlayerPrefs.HasKey("Layout"))
             SelectedLayout(0);
@@ -59,12 +64,14 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
+    //This function will be called when Play button clicked
     public void PlayGame()
     {
         MainController.Instance.gameController.Init();
         Close();
     }
 
+    //Selecing the layout form settings menu
     public void SelectedLayout(int Index)
     {
         PlayerPrefs.SetInt("Layout", Index);
@@ -94,5 +101,47 @@ public class MainMenuController : MonoBehaviour
     public void Close()
     {
         MainObject.SetActive(false);
+    }
+
+    public void CheckForResume()
+    {
+        if(PlayerPrefs.HasKey("SavedData"))
+        {
+            //Enable Resume menu         
+            ResumeMenu.SetActive(true);
+        }
+        else
+        {
+            Init();
+        }
+    }
+
+    public void DontLoadData()
+    {
+        PlayerPrefs.DeleteKey("SavedData");
+        PlayerPrefs.Save();
+        Init();
+    }
+
+    public void LoadData()
+    {
+        if (PlayerPrefs.HasKey("SavedData"))
+        {
+            string jsonData = PlayerPrefs.GetString("SavedData");
+
+            DetailsToSave data = JsonUtility.FromJson<DetailsToSave>(jsonData);
+
+            MainController.Instance.gameController.rowCount = data.rowCount;
+            MainController.Instance.gameController.columnCount = data.columnCount;
+            MainController.Instance.gameController.TurnCounter = data.TurnCounter;
+            MainController.Instance.gameController.Score = data.Score;
+            MainController.Instance.gameController.GameEndCounter = data.GameEndCounter;
+            MainController.Instance.gameController.ImageNameList = new List<string>(data.ImageNameList);
+
+            MainController.Instance.gameController.OnResumePreviouseGame(data.rowCount, data.columnCount, data.TurnCounter, data.Score, data.GameEndCounter, data.ImageNameList);
+
+            PlayerPrefs.DeleteKey("SavedData");
+            PlayerPrefs.Save();
+        }
     }
 }

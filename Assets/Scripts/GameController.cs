@@ -7,13 +7,14 @@ using System.Linq;
 using UnityEditor.SceneTemplate;
 using UnityEngine.SocialPlatforms.Impl;
 using System;
+using System.Data;
 
 public class GameController : MonoBehaviour
 {
     public GameObject MainObject;
 
-    public int rowCount = 4;
-    public int columnCount = 4;
+    public int rowCount;
+    public int columnCount;
 
     public SampleCard sampleCard;
     public Transform grideParent;
@@ -22,7 +23,7 @@ public class GameController : MonoBehaviour
 
     public DynamicGrid dynamicGrid;
 
-    private List<SampleCard> cardsList = new List<SampleCard>();
+    public List<SampleCard> cardsList = new List<SampleCard>();
 
     public List<Sprite> result = new List<Sprite>();
 
@@ -30,7 +31,7 @@ public class GameController : MonoBehaviour
     private SampleCard SelectedCard;
 
     public TMP_Text Turns_Text;
-    private int TurnCounter = 0;
+    public int TurnCounter;
     public TMP_Text Score_Text;
     public int Score;
 
@@ -42,6 +43,7 @@ public class GameController : MonoBehaviour
     public TMP_Text TotalScore;
 
     public GameObject Endgame;
+    public List<string> ImageNameList = new List<string>();
 
     private void OnEnable()
     {
@@ -60,6 +62,8 @@ public class GameController : MonoBehaviour
         AddScore(0);
         AddTuens();
 
+        TurnCounter = 0;
+        Score = 0;
         ComboCounter = -1;
         GameEndCounter= 0;
 
@@ -69,6 +73,7 @@ public class GameController : MonoBehaviour
     }
 
 
+    //This method sets the card based number of rows and colums 
     public void SetupCards()
     {
         cardsList.Clear();
@@ -99,9 +104,12 @@ public class GameController : MonoBehaviour
         {
             SampleCard cardz = Instantiate(sampleCard);
 
+            cardz.index = i;
+
             cardz.card_Button.interactable = false;
 
             cardz.front_Image.sprite = result[i];
+            ImageNameList.Add(result[i].name);
 
             cardz.card_Button.onClick.RemoveAllListeners();
             cardz.card_Button.onClick.AddListener(()=>
@@ -112,12 +120,78 @@ public class GameController : MonoBehaviour
             cardsList.Add(cardz);
         }
 
+        //Setting the grid parameter based on rows and columns
         dynamicGrid.SetGridPattern(rowCount, columnCount, cardsList);
 
         StartCoroutine(InitialFlipWithDelay());
     }
 
-   
+    public void OnResumePreviouseGame(int rows, int colums, int Turns, int score, int endCounter, List<string> ImageNames)
+    {
+        cardsList.Clear();
+        result.Clear();
+        MainObject.SetActive(true);
+
+        ComboCounter = -1;
+        GameEndCounter = endCounter;
+
+        TotalScore.text = "" + PlayerPrefs.GetInt("TotalScore");
+        Endgame.SetActive(false);
+
+        Score_Text.text = "" + score;
+        Turns_Text.text = "" + Turns;
+
+        for(int i=0; i < ImageNames.Count; i++)
+        {
+            if (ImageNames[i] != "null")
+            {
+                for (int j = 0; j < Options.Count; j++)
+                {
+                    if (ImageNames[i] == Options[j].name)
+                    {
+                        result.Add(Options[j]);
+                    }
+                }
+            }
+            else
+            {
+                result.Add(null);
+            }
+        }
+
+        for (int i = 0; i < result.Count; i++)
+        {
+            SampleCard cardz = Instantiate(sampleCard);
+            if (result[i] != null)
+            {
+               
+                cardz.card_Button.interactable = false;
+
+                cardz.front_Image.sprite = result[i];
+                Debug.Log("cardz.front_Image.sprite     "+ cardz.front_Image.sprite.name); 
+                cardz.card_Button.onClick.RemoveAllListeners();
+                cardz.card_Button.onClick.AddListener(() =>
+                {
+                    VerifyCardMatch(cardz);
+                  
+                });
+                cardsList.Add(cardz);
+               
+            }
+            else
+            {
+                cardz.front_Image.sprite = null;
+                cardsList.Add(cardz) ;
+            }
+           
+        }
+
+        dynamicGrid.SetGridPattern(rows, colums, cardsList);
+        StartCoroutine(InitialFlipWithDelay());
+    }
+
+
+    //Shuffle the the final result after randomization
     void SuffleList<T>(List<T> list)
     {
         for(int i = list.Count - 1; i > 0; i--)
@@ -139,6 +213,7 @@ public class GameController : MonoBehaviour
         }
     }
 
+    //Verify the the match status
     void VerifyCardMatch(SampleCard card)
     {
         SoundManager.instance.PlayButtonClickSound();
@@ -152,7 +227,8 @@ public class GameController : MonoBehaviour
         {
             if(SelectedCard.front_Image.sprite == card.front_Image.sprite)
             {
-              
+                ImageNameList[SelectedCard.index] = "null";
+                ImageNameList[card.index] = "null";
                 SoundManager.instance.PlayMatchSound();
                 StartCoroutine( SelectedCard.HideCard());
                 StartCoroutine(card.HideCard());            
@@ -173,11 +249,9 @@ public class GameController : MonoBehaviour
         }
     }
 
-  
-
     void AddTuens()
     {       
-        Turns_Text.text = ""+TurnCounter++;
+        Turns_Text.text = ""+(TurnCounter++);
     }
 
     void AddScore(int ScoreToAdd)
@@ -206,6 +280,7 @@ public class GameController : MonoBehaviour
         ++GameEndCounter;
         if(GameEndCounter == ((rowCount * columnCount) / 2))
         {
+            ImageNameList.Clear();
             int TotalScore = PlayerPrefs.GetInt("TotalScore") + Score;
             PlayerPrefs.SetInt("TotalScore", TotalScore);
             Endgame.SetActive(true);
@@ -213,5 +288,31 @@ public class GameController : MonoBehaviour
             MainController.Instance.mainMenuController.Init();
             Close();
         }
+    }
+
+    void SaveGame()
+    {
+        if (ImageNameList.Count > 0)
+        {
+            DetailsToSave data = new DetailsToSave
+            {
+                rowCount = rowCount,
+                columnCount = columnCount,
+                TurnCounter = TurnCounter,
+                Score = Score,
+                GameEndCounter = GameEndCounter,
+                ImageNameList = new List<string>(ImageNameList)
+            };
+
+            string jsonData = JsonUtility.ToJson(data);
+
+            PlayerPrefs.SetString("SavedData", jsonData);
+            PlayerPrefs.Save();
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveGame();
     }
 }

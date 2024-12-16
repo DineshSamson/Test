@@ -39,7 +39,18 @@ public class DynamicGrid : MonoBehaviour
 
         for (int i = 0; i < CardsList.Count; i++)
         {
+
             CardsList[i].transform.SetParent(_gridParent, false);
+
+            if (CardsList[i].front_Image.sprite == null)
+
+            {
+                CardsList[i].card_Button.GetComponent<Image>().enabled = false;
+                CardsList[i].front_Image.gameObject.SetActive(false);
+                CardsList[i].back_Image.SetActive(false);
+                CardsList[i].card_Button.interactable = false;
+                CardsList[i]._animation.enabled = false;
+            }
         }
 
         Vector2 CurrentSize = grideRect.sizeDelta;

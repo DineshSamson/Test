@@ -25,7 +25,7 @@ public class MainController : MonoBehaviour
 
     public void Init()
     {
-        mainMenuController.Init();
+        mainMenuController.CheckForResume();
         gameController.Close();
     }
 }
